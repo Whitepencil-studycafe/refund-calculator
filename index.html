@@ -363,6 +363,12 @@ details p b{color:var(--brand)}
   </table>
   <p class="policy-tail">※ 스터디룸 예약시, 당일 취소 및 환불 불가</p>
   <p class="policy-note" style="margin-top:10px">
+    <b style="color:var(--brand)">남은 사용시간과 남은 유효기간의 비교</b>는 각각의 <b style="color:var(--brand)">잔여비율</b>로 합니다.
+    시간 잔여비율(잔여시간 &divide; 계약상 이용시간)과 유효기간 잔여비율(남은 유효기간 &divide; 전체 유효기간) 중
+    <b style="color:var(--brand)">낮은 쪽</b>만 환불 대상이 됩니다.<br>
+    예) 50시간 · 유효기간 60일에서 잔여 40시간(80%)이지만 유효기간이 1일(1.7%) 남았다면 → 1.7%만 환불 대상.
+  </p>
+  <p class="policy-note">
     스터디룸 <b style="color:var(--brand)">시간권</b>은 위 <b style="color:var(--brand)">시간권</b> 규정을 그대로 따릅니다.
     스터디룸을 <b>당일권</b>으로 결제한 경우에는 당일권 규정에 따라 환불이 불가합니다.
   </p>
@@ -553,7 +559,7 @@ details p b{color:var(--brand)}
         var exp = addDays(start, v-1);
         var left = daysInclusive(base, exp);
         lines.push('유효기간: <b>'+fmt(start)+' ~ '+fmt(exp)+'</b> ('+v+'일)');
-        lines.push('남은 유효기간: <b>'+(left > 0 ? left+'일' : '만료됨')+'</b>');
+        lines.push('남은 유효기간: <b>'+(left > 0 ? left+'일 (잔여비율 '+pct(Math.min(left/v,1))+')' : '만료됨')+'</b>');
       }
     }
     if(t === 'period' && !before && start && base){
@@ -682,36 +688,38 @@ details p b{color:var(--brand)}
           v:leftValid+'일 남음'});
       }
 
-      // 남은 사용시간 > 남은 유효기간 → 남은 유효기간만큼만 환불
-      var capped = false;
-      if(remain > leftValid){
-        capped = true;
-        usedHours = total - leftValid;
-        remain = leftValid;
-        steps.push({t:'남은 유효기간 한도 적용',
-          f:'남은 잔여시간이 남은 유효기간('+leftValid+'일)보다 많아, 규정에 따라 남은 유효기간만큼만 환불합니다.\n'
-           +'사용시간 = 계약상 이용시간 '+hr(total)+' − 남은 유효기간 '+leftValid+' = '+hr(usedHours),
-          v:hr(remain)+'시간만 인정'});
-      }
+      // 시간이 아무리 남아도 유효기간이 얼마 안 남았으면 그만큼밖에 못 쓴다.
+      // 그래서 '시간 잔여비율'과 '유효기간 잔여비율' 중 낮은 쪽만 환불 대상으로 본다.
+      var hourRatio  = remain / total;
+      var validRatio = Math.min(leftValid / validDays, 1);
+      var keepRatio  = Math.min(hourRatio, validRatio);
+      var capped     = (validRatio < hourRatio);
 
-      var ratio = usedHours / total;
+      usedHours = total * (1 - keepRatio);
+
+      steps.push({t:'환불 대상 비율 정하기',
+        f:'시간 잔여비율 = 잔여 '+hr(remain)+'시간 ÷ 계약 '+hr(total)+'시간 = '+pct(hourRatio)+'\n'
+         +'유효기간 잔여비율 = 남은 '+leftValid+'일 ÷ 전체 '+validDays+'일 = '+pct(validRatio)+'\n'
+         +(capped ? '→ 유효기간 잔여비율이 더 낮습니다. 남은 유효기간만큼만 환불 대상입니다.'
+                  : '→ 시간 잔여비율이 더 낮습니다. 남은 시간만큼만 환불 대상입니다.'),
+        v:pct(keepRatio)});
+
+      var ratio = 1 - keepRatio;                       // 사용(소진) 비율
       var usedAmt = price * ratio;
       var pen = price * PENALTY;
       var refund = Math.max(price - usedAmt - pen, 0);
 
-      steps.push({t:'사용 비율 구하기',
-        f:'사용시간 '+hr(usedHours)+'시간 ÷ 계약상 이용시간 '+hr(total)+'시간 = '+pct(ratio),
-        v:pct(ratio)});
       steps.push({t:'사용한 만큼 빼기',
-        f:num(price)+' × '+pct(ratio)+' = '+won(usedAmt), v:'− '+won(usedAmt), m:true});
+        f:'사용 비율 = 100% − '+pct(keepRatio)+' = '+pct(ratio)+' (시간으로는 '+hr(usedHours)+'시간)\n'
+         +num(price)+' × '+pct(ratio)+' = '+won(usedAmt), v:'− '+won(usedAmt), m:true});
       steps.push({t:'위약금 10% 빼기',
         f:num(price)+' × 10% = '+won(pen), v:'− '+won(pen), m:true});
 
       return show(refund,
-        passName(t)+' — 이용개시일 이후'+(capped ? ' (남은 유효기간 한도 적용)' : '')+(isExt ? ' · 연장분 기준' : ''),
-        '결제금액에서 ①사용한 만큼과 ②위약금 10%를 뺀 금액이 환불액입니다.',
+        passName(t)+' — 이용개시일 이후'+(capped ? ' (유효기간 잔여비율 적용)' : '')+(isExt ? ' · 연장분 기준' : ''),
+        '시간 잔여비율과 유효기간 잔여비율 중 낮은 쪽만 환불 대상으로 보고, 위약금 10%를 뺍니다.',
         steps,
-        won(price)+' − '+won(usedAmt)+' − '+won(pen)+' · 잔여 '+hr(remain)+'시간 / 남은 유효기간 '+leftValid+'일');
+        won(price)+' − '+won(usedAmt)+' − '+won(pen)+' · 시간 '+pct(hourRatio)+' / 유효기간 '+pct(validRatio)+' → '+pct(keepRatio));
     }
 
     /* 기간권 — 이용개시일 이후 */
