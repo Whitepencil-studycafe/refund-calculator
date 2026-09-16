@@ -247,8 +247,9 @@ details p b{color:var(--brand)}
 
   <!-- 스터디룸 -->
   <div id="box-room" hidden>
-    <label for="roomDate">예약일</label>
+    <label for="roomDate">스터디룸 예약일 (실제 사용 예약일정)</label>
     <input type="date" id="roomDate">
+    <div class="hint">결제한 날이 아니라 <b>실제로 스터디룸을 쓰기로 한 날</b>을 입력하세요.</div>
     <div class="hint warn">※ 스터디룸은 예약 당일 취소 및 환불이 불가합니다.</div>
     <div class="hint">예약일이 아직 오지 않았다면 이용개시일 이전으로 보아 결제금액의 90%를 환불합니다.<br>
       <b>스터디룸을 당일권으로 결제한 경우</b>에는 위에서 &lsquo;당일권&rsquo;을 선택하세요 — 당일권은 환불 불가입니다.</div>
@@ -633,7 +634,7 @@ details p b{color:var(--brand)}
       if(rDate.getTime() <= base.getTime()){
         return show(0, '스터디룸 — 당일 취소 · 환불 불가',
           '예약일 당일(또는 이용일이 지난 뒤)에는 취소와 환불이 되지 않습니다.',
-          [{t:'예약일 / 신청일', f:'예약일 '+fmt(rDate)+' · 신청일 '+fmt(base), v:'당일 이후'},
+          [{t:'실제 사용 예약일 / 신청일', f:'예약일 '+fmt(rDate)+' · 신청일 '+fmt(base), v:'당일 이후'},
            {t:'적용 규정', f:'스터디룸 예약시, 당일 취소 및 환불 불가', v:'환불 불가'}],
           '스터디룸은 예약 당일 취소·환불이 불가합니다.');
       }
