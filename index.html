@@ -174,10 +174,11 @@ details p b{color:var(--brand)}
 <section class="card">
   <h2 class="step-title"><i>1</i>이용권 종류</h2>
   <div class="types" id="types">
-    <button type="button" data-type="time"   aria-pressed="true">시간권</button>
-    <button type="button" data-type="period" aria-pressed="false">기간권</button>
-    <button type="button" data-type="day"    aria-pressed="false">당일권</button>
-    <button type="button" data-type="room"   aria-pressed="false">스터디룸</button>
+    <button type="button" data-type="time"     aria-pressed="true">시간권</button>
+    <button type="button" data-type="period"   aria-pressed="false">기간권</button>
+    <button type="button" data-type="day"      aria-pressed="false">당일권</button>
+    <button type="button" data-type="room"     aria-pressed="false">스터디룸 예약</button>
+    <button type="button" data-type="roomTime" aria-pressed="false">스터디룸 시간권</button>
   </div>
 
   <div id="stageWrap">
@@ -199,7 +200,11 @@ details p b{color:var(--brand)}
       <button type="button" data-h="100" data-p="140000" data-v="120">100시간 · 14만원 · 120일</button>
       <button type="button" data-h="200" data-p="250000" data-v="180">200시간 · 25만원 · 180일</button>
     </div>
-    <div class="hint">기본값은 위 버튼으로 채우고, 실제 결제 내역에 맞게 아래 값을 직접 수정하세요.</div>
+    <div class="chips" id="roomTimePresets" hidden>
+      <button type="button" data-h="20" data-p="90000" data-v="60">2인실 20시간 · 9만원 · 60일</button>
+      <button type="button" data-h="30">30시간</button>
+    </div>
+    <div class="hint" id="timeHint">기본값은 위 버튼으로 채우고, 실제 결제 내역에 맞게 아래 값을 직접 수정하세요.</div>
 
     <label class="check" for="extend">
       <input type="checkbox" id="extend">
@@ -231,12 +236,21 @@ details p b{color:var(--brand)}
     <label for="roomDate">예약일</label>
     <input type="date" id="roomDate">
     <div class="hint warn">※ 스터디룸은 예약 당일 취소 및 환불이 불가합니다.</div>
+    <div class="hint">예약일이 아직 오지 않았다면 이용개시일 이전으로 보아 결제금액의 90%를 환불합니다.<br>
+      <b>스터디룸을 당일권으로 결제한 경우</b>에는 위에서 &lsquo;당일권&rsquo;을 선택하세요 — 당일권은 환불 불가입니다.</div>
   </div>
 
   <!-- 금액 -->
   <div id="priceWrap">
     <label for="price" id="priceLabel">결제 금액 (원)</label>
     <input type="number" id="price" min="0" step="1000" inputmode="numeric" value="80000">
+    <div class="chips" id="roomPresets" hidden>
+      <button type="button" data-p="5000">1시간 · 5천원</button>
+      <button type="button" data-p="10000">2시간 · 1만원</button>
+      <button type="button" data-p="15000">3시간 · 1.5만원</button>
+      <button type="button" data-p="20000">4시간 · 2만원</button>
+    </div>
+    <div class="hint" id="roomPriceHint" hidden>2인실 기준 시간당 5,000원입니다. 인실·요금이 다르면 실제 결제금액을 직접 입력하세요.</div>
   </div>
 
   <!-- 시간권 입력 -->
@@ -348,6 +362,10 @@ details p b{color:var(--brand)}
     </tr>
   </table>
   <p class="policy-tail">※ 스터디룸 예약시, 당일 취소 및 환불 불가</p>
+  <p class="policy-note" style="margin-top:10px">
+    스터디룸 <b style="color:var(--brand)">시간권</b>은 위 <b style="color:var(--brand)">시간권</b> 규정을 그대로 따릅니다.
+    스터디룸을 <b>당일권</b>으로 결제한 경우에는 당일권 규정에 따라 환불이 불가합니다.
+  </p>
 
   <details>
     <summary>시간권 연장(재구매) 시 환불 기준</summary>
@@ -416,19 +434,16 @@ details p b{color:var(--brand)}
     syncUI();
   });
 
-  /* 프리셋: 시간 · 금액 · 유효기간을 한 번에 채움 (전부 직접 수정 가능) */
-  $('timePresets').addEventListener('click', function(e){
-    var b = e.target.closest('button'); if(!b) return;
-    $('totalHours').value = b.dataset.h;
-    $('price').value      = b.dataset.p;
-    $('validDays').value  = b.dataset.v;
-    refresh();
-  });
-  $('periodPresets').addEventListener('click', function(e){
-    var b = e.target.closest('button'); if(!b) return;
-    $('totalDays').value = b.dataset.d;
-    if(b.dataset.p) $('price').value = b.dataset.p;
-    refresh();
+  /* 프리셋 버튼: 있는 값만 채운다 (전부 직접 수정 가능한 기본값일 뿐) */
+  var PRESET_FIELD = { h:'totalHours', p:'price', v:'validDays', d:'totalDays' };
+  ['timePresets','roomTimePresets','periodPresets','roomPresets'].forEach(function(id){
+    $(id).addEventListener('click', function(e){
+      var b = e.target.closest('button'); if(!b) return;
+      Object.keys(PRESET_FIELD).forEach(function(k){
+        if(b.dataset[k] !== undefined) $(PRESET_FIELD[k]).value = b.dataset[k];
+      });
+      refresh();
+    });
   });
   Array.prototype.forEach.call(document.querySelectorAll('.chips[data-fill]'), function(c){
     c.addEventListener('click', function(e){
@@ -441,21 +456,37 @@ details p b{color:var(--brand)}
   $('extend').addEventListener('change', syncUI);
 
   /* ───────── 화면 구성 ───────── */
+  // 스터디룸 시간권은 규정상 시간권과 똑같이 계산한다 — 프리셋과 이름표만 다르다.
+  function isTimePass(t){ return t === 'time' || t === 'roomTime'; }
+  function passName(t){
+    return t === 'period'   ? '기간권'
+         : t === 'roomTime' ? '스터디룸 시간권' : '시간권';
+  }
+
   function syncUI(){
     var t = state.type;
     var before = (state.stage === 'before');
     var isExt  = $('extend').checked;
-    var hasStage = (t === 'time' || t === 'period');
+    var isTime = isTimePass(t);
+    var hasStage = (isTime || t === 'period');
 
     // 버튼 표시는 항상 state 에서 다시 그린다 — 화면과 계산 기준이 어긋나면
     // 손님에게 엉뚱한 금액이 나가므로 두 곳을 따로 관리하지 않는다.
     pressGroup($('types'), 'type',  t);
     pressGroup($('stage'), 'stage', state.stage);
 
-    $('box-time').hidden   = (t !== 'time');
+    $('box-time').hidden   = !isTime;
     $('box-period').hidden = (t !== 'period');
     $('box-day').hidden    = (t !== 'day');
     $('box-room').hidden   = (t !== 'room');
+
+    $('timePresets').hidden     = (t !== 'time');
+    $('roomTimePresets').hidden = (t !== 'roomTime');
+    $('roomPresets').hidden     = (t !== 'room');
+    $('roomPriceHint').hidden   = (t !== 'room');
+    $('timeHint').textContent   = (t === 'roomTime')
+      ? '2인실 20시간 기준 기본값입니다. 인실·시간·금액이 다르면 아래 값을 직접 수정하세요.'
+      : '기본값은 위 버튼으로 채우고, 실제 결제 내역에 맞게 아래 값을 직접 수정하세요.';
 
     $('stageWrap').hidden = !hasStage;
     $('stageHint').textContent = before
@@ -463,10 +494,10 @@ details p b{color:var(--brand)}
       : '이미 사용을 시작한 경우입니다. 사용한 만큼 빼고, 위약금 10%를 추가로 뺍니다.';
 
     $('priceWrap').hidden = (t === 'day');
-    $('priceLabel').textContent = (t === 'time' && isExt && !before)
+    $('priceLabel').textContent = (isTime && isExt && !before)
       ? '신규(연장) 결제 금액 (원)' : '결제 금액 (원)';
 
-    $('hoursWrap').hidden = !(t === 'time' && !before);
+    $('hoursWrap').hidden = !(isTime && !before);
     $('totalHoursLabel').textContent = (isExt ? '신규(연장) 계약상 이용시간 (시간)' : '계약상 이용시간 (시간)');
     $('normalHours').hidden = isExt;
     $('extendHours').hidden = !isExt;
@@ -474,7 +505,7 @@ details p b{color:var(--brand)}
     $('daysWrap').hidden = !(t === 'period' && !before);
 
     $('dateWrap').hidden  = (t === 'day' || t === 'room');
-    $('validWrap').hidden = !( (t === 'time') || before );
+    $('validWrap').hidden = !( isTime || before );
     $('startLabel').textContent = before
       ? '결제일 (유효기간 시작일)'
       : (t === 'period' ? '이용개시일 (이용 시작일)'
@@ -608,13 +639,13 @@ details p b{color:var(--brand)}
       steps.push({t:'아직 사용 전 → 사용분 공제 없음',
                   f:'이용을 시작하지 않아 차감할 사용분이 없습니다.', v:'0원'});
       steps.push({t:'위약금 10% 빼기', f:num(price)+' × 10% = '+won(pen0), v:'− '+won(pen0), m:true});
-      return show(price - pen0, (t === 'time' ? '시간권' : '기간권')+' — 이용개시일 이전 (90% 환불)',
+      return show(price - pen0, passName(t)+' — 이용개시일 이전 (90% 환불)',
         '이용개시일 이전이므로 결제금액에서 위약금 10%만 빼고 돌려드립니다.', steps,
         '결제금액의 90% · 유효기간 '+fmt(expiry)+'까지 ('+leftValid+'일 남음)');
     }
 
-    /* 시간권 — 이용개시일 이후 */
-    if(t === 'time'){
+    /* 시간권 · 스터디룸 시간권 — 이용개시일 이후 */
+    if(isTimePass(t)){
       var total = Number($('totalHours').value);
       if(!total || total <= 0){ alert('계약상 이용시간을 입력해주세요.'); return; }
 
@@ -677,7 +708,7 @@ details p b{color:var(--brand)}
         f:num(price)+' × 10% = '+won(pen), v:'− '+won(pen), m:true});
 
       return show(refund,
-        '시간권 — 이용개시일 이후'+(capped ? ' (남은 유효기간 한도 적용)' : '')+(isExt ? ' · 연장분 기준' : ''),
+        passName(t)+' — 이용개시일 이후'+(capped ? ' (남은 유효기간 한도 적용)' : '')+(isExt ? ' · 연장분 기준' : ''),
         '결제금액에서 ①사용한 만큼과 ②위약금 10%를 뺀 금액이 환불액입니다.',
         steps,
         won(price)+' − '+won(usedAmt)+' − '+won(pen)+' · 잔여 '+hr(remain)+'시간 / 남은 유효기간 '+leftValid+'일');
