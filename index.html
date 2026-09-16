@@ -259,13 +259,18 @@ details p b{color:var(--brand)}
   <div id="priceWrap">
     <label for="price" id="priceLabel">결제 금액 (원)</label>
     <input type="number" id="price" min="0" step="1000" inputmode="numeric" value="80000">
-    <div class="chips" id="roomPresets" hidden>
-      <button type="button" data-p="5000">1시간 · 5천원</button>
-      <button type="button" data-p="10000">2시간 · 1만원</button>
-      <button type="button" data-p="15000">3시간 · 1.5만원</button>
-      <button type="button" data-p="20000">4시간 · 2만원</button>
+    <div id="roomRateBox" hidden>
+      <label for="roomRate">시간당 단가 (원)</label>
+      <input type="number" id="roomRate" min="0" step="500" value="5000" inputmode="numeric">
+      <div class="chips" id="roomPresets">
+        <button type="button" data-hrs="1"></button>
+        <button type="button" data-hrs="2"></button>
+        <button type="button" data-hrs="3"></button>
+        <button type="button" data-hrs="4"></button>
+      </div>
+      <div class="hint">2인실 기준 시간당 5,000원입니다. 인실·요금이 다르면 <b>단가를 고치세요</b> — 버튼 금액도 같이 바뀝니다.
+        버튼을 쓰지 않고 위 결제 금액을 직접 입력해도 됩니다.</div>
     </div>
-    <div class="hint" id="roomPriceHint" hidden>2인실 기준 시간당 5,000원입니다. 인실·요금이 다르면 실제 결제금액을 직접 입력하세요.</div>
   </div>
 
   <!-- 시간권 입력 -->
@@ -471,7 +476,7 @@ details p b{color:var(--brand)}
 
   /* 프리셋 버튼: 있는 값만 채운다 (전부 직접 수정 가능한 기본값일 뿐) */
   var PRESET_FIELD = { h:'totalHours', p:'price', v:'validDays', d:'totalDays' };
-  ['timePresets','roomTimePresets','periodPresets','roomPresets'].forEach(function(id){
+  ['timePresets','roomTimePresets','periodPresets'].forEach(function(id){
     $(id).addEventListener('click', function(e){
       var b = e.target.closest('button'); if(!b) return;
       Object.keys(PRESET_FIELD).forEach(function(k){
@@ -487,6 +492,23 @@ details p b{color:var(--brand)}
       refresh();
     });
   });
+
+  /* 스터디룸 예약: 단가 × 예약시간으로 결제금액을 채운다.
+     인실마다 요금이 달라 단가를 고칠 수 있어야 하고, 고치면 버튼 금액도 따라가야 한다. */
+  function renderRoomChips(){
+    var rate = Number($('roomRate').value) || 0;
+    Array.prototype.forEach.call($('roomPresets').querySelectorAll('button'), function(b){
+      var h = Number(b.dataset.hrs);
+      b.textContent = h + '시간 · ' + num(rate * h) + '원';
+    });
+  }
+  $('roomPresets').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    $('price').value = (Number($('roomRate').value) || 0) * Number(b.dataset.hrs);
+    refresh();
+  });
+  $('roomRate').addEventListener('input', renderRoomChips);
+  renderRoomChips();
 
   $('extend').addEventListener('change', syncUI);
 
@@ -517,8 +539,7 @@ details p b{color:var(--brand)}
 
     $('timePresets').hidden     = (t !== 'time');
     $('roomTimePresets').hidden = (t !== 'roomTime');
-    $('roomPresets').hidden     = (t !== 'room');
-    $('roomPriceHint').hidden   = (t !== 'room');
+    $('roomRateBox').hidden     = (t !== 'room');
     $('timeHint').textContent   = (t === 'roomTime')
       ? '2인실 20시간 기준 기본값입니다. 인실·시간·금액이 다르면 아래 값을 직접 수정하세요.'
       : '기본값은 위 버튼으로 채우고, 실제 결제 내역에 맞게 아래 값을 직접 수정하세요.';
