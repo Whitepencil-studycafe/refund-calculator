@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>화이트펜슬 환불 계산기</title>
+<link rel="stylesheet" as="style" crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+/* 색은 wp.lowdownlab.co.kr 의 브랜드 토큰을 그대로 따른다 */
+:root{
+  color-scheme: light;
+  --brand:#365234; --brand-dark:#263a25; --brand-soft:#e6eae1;
+  --accent:#a68a4e; --accent-soft:#efe7d6;
+  --bg:#f7f4ed; --card:#fff; --line:#e3ded1;
+  --fg:#111; --muted:#6b6a63; --danger:#f04438;
+  --font:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,
+         "Apple SD Gothic Neo","Malgun Gothic","Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);
+  line-height:1.7;letter-spacing:-.1px;-webkit-font-smoothing:antialiased}
+
+/* ── 헤더 ── */
+.hero{background:var(--brand);padding:30px 20px 34px;text-align:center}
+.hero .logo-card{width:104px;height:104px;margin:0 auto;background:#fff;border-radius:22px;
+  display:flex;align-items:center;justify-content:center;overflow:hidden}
+.hero .logo-card img{max-width:78%;max-height:78%;width:auto;height:auto;display:block}
+.hero .wordmark{margin-top:16px;font-size:20px;font-weight:800;color:#fff;letter-spacing:2px}
+.hero .title{margin-top:4px;font-size:13px;font-weight:600;color:var(--brand-soft);letter-spacing:2px}
+
+main{max-width:640px;margin:0 auto;padding:18px 14px 64px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:18px 16px;margin-top:14px}
+.card:first-child{margin-top:0}
+.step-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;margin:0 0 13px}
+.step-title i{flex:none;width:22px;height:22px;border-radius:7px;background:var(--brand);color:#fff;
+  font-style:normal;font-size:12px;font-weight:800;text-align:center;line-height:22px}
+
+/* ── 선택 버튼 ── */
+.types{display:flex;flex-wrap:wrap;gap:7px}
+.types button{flex:1 1 auto;min-width:74px;padding:11px 8px;font-size:13.5px;font-weight:700;
+  border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--fg);
+  cursor:pointer;font-family:inherit;transition:.12s}
+.types button:hover{border-color:var(--brand)}
+.types button[aria-pressed="true"]{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+.stage{display:flex;gap:7px;margin-top:11px}
+.stage button{flex:1;padding:11px 8px;font-size:13px;font-weight:700;border:1px solid var(--line);
+  border-radius:11px;background:#fff;color:var(--fg);cursor:pointer;font-family:inherit}
+.stage button:hover{border-color:var(--brand)}
+.stage button[aria-pressed="true"]{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+/* ── 입력 ── */
+label{display:block;margin-top:15px;font-size:12.5px;font-weight:700;color:var(--fg)}
+.card > *:first-child + label,label:first-child{margin-top:0}
+input[type=number],input[type=date]{width:100%;padding:12px;margin-top:6px;font-size:16px;
+  font-family:inherit;font-weight:600;border:1px solid var(--line);border-radius:10px;
+  background:#fff;color:var(--fg)}
+input:focus{outline:2px solid var(--brand);outline-offset:-1px;border-color:var(--brand)}
+input[readonly]{background:var(--brand-soft);border-color:var(--brand-soft);color:var(--brand-dark)}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chips button{padding:8px 13px;font-size:12px;font-weight:700;border:1px solid var(--line);
+  border-radius:999px;background:var(--bg);color:var(--fg);cursor:pointer;font-family:inherit}
+.chips button:hover{border-color:var(--brand);background:var(--brand-soft)}
+
+.hint{margin-top:8px;font-size:11.5px;color:var(--muted);line-height:1.7}
+.hint b{color:var(--brand)}
+.hint.warn{color:var(--danger);font-weight:700}
+
+.check{display:flex;align-items:flex-start;gap:9px;margin-top:16px;padding:13px;
+  border:1px solid var(--line);border-radius:12px;background:var(--bg);cursor:pointer}
+.check input{width:18px;height:18px;margin:2px 0 0;flex:none;accent-color:var(--brand)}
+.check span{font-size:12.5px;font-weight:700;line-height:1.55}
+.check span small{display:block;font-weight:500;color:var(--muted);font-size:11.5px;margin-top:4px}
+.check span small b{color:var(--brand)}
+
+.derived{margin-top:14px;padding:12px 13px;border-radius:11px;background:var(--brand-soft);
+  font-size:12px;color:var(--brand-dark);line-height:1.9}
+.derived b{font-weight:800}
+.derived:empty{display:none}
+
+.go{width:100%;margin-top:16px;padding:17px;font-size:16px;font-weight:800;font-family:inherit;
+  border:none;border-radius:13px;background:var(--brand);color:#fff;cursor:pointer;letter-spacing:.3px}
+.go:hover{background:var(--brand-dark)}
+.go:active{transform:translateY(1px)}
+
+/* ── 결과 ── */
+#out{display:none;margin-top:14px;background:var(--card);border:1px solid var(--brand);
+  border-radius:16px;overflow:hidden}
+#out.on{display:block}
+.headline{padding:16px;background:var(--brand-soft);border-bottom:1px solid var(--line)}
+.headline .rule{font-size:13.5px;font-weight:800;text-align:center;color:var(--brand-dark)}
+.headline .plain{margin-top:6px;font-size:12px;color:var(--muted);text-align:center;
+  line-height:1.65;word-break:keep-all}
+
+.steps{padding:2px 0}
+.stp{display:flex;gap:11px;padding:13px 15px;border-bottom:1px solid var(--line);align-items:baseline}
+.stp:last-child{border-bottom:none}
+.stp .no{flex:none;width:21px;height:21px;border-radius:50%;background:var(--brand);color:#fff;
+  font-size:11.5px;font-weight:800;text-align:center;line-height:21px}
+.stp .body{flex:1;min-width:0}
+.stp .t{font-size:13px;font-weight:700}
+.stp .f{margin-top:3px;font-size:11.5px;color:var(--muted);line-height:1.7;
+  word-break:break-word;font-variant-numeric:tabular-nums}
+.stp .v{flex:none;font-size:13.5px;font-weight:800;text-align:right;white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+.stp .v.minus{color:var(--danger)}
+
+.final{padding:20px 16px;background:var(--brand);color:#fff;text-align:center}
+.final .cap{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--brand-soft)}
+.final .num{font-size:36px;font-weight:800;margin-top:2px;letter-spacing:-1.5px;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+.final .memo{margin-top:7px;font-size:11.5px;color:var(--brand-soft);line-height:1.65;word-break:keep-all}
+#out.no{border-color:var(--danger)}
+#out.no .final{background:var(--danger)}
+#out.no .final .cap,#out.no .final .memo{color:rgba(255,255,255,.82)}
+
+.actions{display:flex;gap:8px;margin-top:12px}
+.actions button,.actions a{flex:1;padding:14px;font-size:13.5px;font-weight:700;font-family:inherit;
+  text-align:center;border:1px solid var(--line);border-radius:12px;background:#fff;
+  color:var(--fg);cursor:pointer;text-decoration:none;display:block}
+.actions button:hover{border-color:var(--brand)}
+.actions a.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.actions a.primary:hover{background:#8a6d1f}
+
+/* ── 규정 안내 ── */
+.policy-head{font-size:19px;font-weight:800;margin:0;color:var(--brand-dark)}
+.policy-lead{font-size:13.5px;font-weight:700;margin:12px 0 5px}
+.policy-note{font-size:12px;color:var(--muted);margin:0 0 13px;line-height:1.8}
+.policy-note b{color:var(--danger)}
+table.policy{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+table.policy th,table.policy td{border:1px solid var(--brand);padding:10px;vertical-align:top;
+  text-align:left;line-height:1.75;word-break:keep-all}
+table.policy th{background:var(--brand-soft);font-weight:800;width:84px;color:var(--brand-dark)}
+table.policy .tag{display:block;font-weight:800;color:var(--brand);padding-bottom:6px;
+  margin-bottom:7px;border-bottom:1px solid var(--line)}
+table.policy .eq{font-weight:700}
+table.policy .cond{display:block;margin-top:9px;font-size:11px;color:var(--muted)}
+.policy-tail{font-size:12px;font-weight:700;margin:12px 0 0;color:var(--danger)}
+
+details{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:0 14px;background:var(--bg)}
+details[open]{border-color:var(--brand)}
+summary{cursor:pointer;font-weight:700;padding:13px 0;list-style:none;font-size:13px;color:var(--brand-dark)}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"+ ";font-weight:800}
+details[open] summary::before{content:"\2013 "}
+details p{font-size:11.5px;color:var(--muted);line-height:1.85;margin:0 0 12px}
+details p b{color:var(--brand)}
+
+.foot{margin-top:26px;text-align:center;font-size:10.5px;color:var(--muted);
+  letter-spacing:.4px;line-height:1.9}
+[hidden]{display:none !important}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <!-- 서버(/refund)에서는 /static/logo.jpg, GitHub Pages 처럼 단독 HTML 로 올릴 때는
+       같은 폴더의 logo.jpg 를 쓴다. 둘 다 없으면 로고 자리를 비운다. -->
+  <div class="logo-card">
+    <img src="/static/logo.jpg" alt="WHITE PENCIL"
+         onerror="if(this.dataset.alt){this.parentNode.style.display='none';}else{this.dataset.alt=1;this.src='logo.jpg';}">
+  </div>
+  <div class="wordmark">WHITEPENCIL</div>
+  <div class="title">환불 계산기</div>
+</header>
+
+<main>
+
+<section class="card">
+  <h2 class="step-title"><i>1</i>이용권 종류</h2>
+  <div class="types" id="types">
+    <button type="button" data-type="time"   aria-pressed="true">시간권</button>
+    <button type="button" data-type="period" aria-pressed="false">기간권</button>
+    <button type="button" data-type="day"    aria-pressed="false">당일권</button>
+    <button type="button" data-type="room"   aria-pressed="false">스터디룸</button>
+  </div>
+
+  <div id="stageWrap">
+    <div class="stage" id="stage">
+      <button type="button" data-stage="after"  aria-pressed="true">이용개시일 이후</button>
+      <button type="button" data-stage="before" aria-pressed="false">이용개시일 이전</button>
+    </div>
+    <div class="hint" id="stageHint"></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2 class="step-title"><i>2</i>결제 · 이용 정보 입력</h2>
+
+  <!-- 시간권 -->
+  <div id="box-time">
+    <div class="chips" id="timePresets">
+      <button type="button" data-h="50"  data-p="80000"  data-v="60">50시간 · 8만원 · 60일</button>
+      <button type="button" data-h="100" data-p="140000" data-v="120">100시간 · 14만원 · 120일</button>
+      <button type="button" data-h="200" data-p="250000" data-v="180">200시간 · 25만원 · 180일</button>
+    </div>
+    <div class="hint">기본값은 위 버튼으로 채우고, 실제 결제 내역에 맞게 아래 값을 직접 수정하세요.</div>
+
+    <label class="check" for="extend">
+      <input type="checkbox" id="extend">
+      <span>연장(재구매)으로 기존 잔여시간이 합산된 이용권입니다
+        <small>환불은 <b>신규 결제금액</b>과 <b>신규 결제 이후 사용시간</b>만으로 계산합니다.
+        유효기간은 신규 이용권 기준으로 <b>새로 시작</b>합니다.</small></span>
+    </label>
+  </div>
+
+  <!-- 기간권 -->
+  <div id="box-period" hidden>
+    <div class="chips" id="periodPresets">
+      <button type="button" data-d="14" data-p="100000">2주권 · 10만원</button>
+      <button type="button" data-d="28" data-p="160000">4주권 · 16만원</button>
+      <button type="button" data-d="56">8주권</button>
+      <button type="button" data-d="84">12주권</button>
+      <button type="button" data-d="336">48주권</button>
+    </div>
+    <div class="hint">기본값은 위 버튼으로 채우고, 실제 결제 내역에 맞게 아래 값을 직접 수정하세요.</div>
+  </div>
+
+  <!-- 당일권 -->
+  <div id="box-day" hidden>
+    <div class="hint warn">※ 당일권은 규정상 환불이 불가합니다. (환불금액 0원)</div>
+  </div>
+
+  <!-- 스터디룸 -->
+  <div id="box-room" hidden>
+    <label for="roomDate">예약일</label>
+    <input type="date" id="roomDate">
+    <div class="hint warn">※ 스터디룸은 예약 당일 취소 및 환불이 불가합니다.</div>
+  </div>
+
+  <!-- 금액 -->
+  <div id="priceWrap">
+    <label for="price" id="priceLabel">결제 금액 (원)</label>
+    <input type="number" id="price" min="0" step="1000" inputmode="numeric" value="80000">
+  </div>
+
+  <!-- 시간권 입력 -->
+  <div id="hoursWrap">
+    <label for="totalHours" id="totalHoursLabel">계약상 이용시간 (시간)</label>
+    <input type="number" id="totalHours" min="1" step="1" value="50" inputmode="numeric">
+
+    <div id="normalHours">
+      <label for="remainHours">잔여 시간 (시간)</label>
+      <input type="number" id="remainHours" min="0" step="0.5" inputmode="decimal" placeholder="예: 32">
+    </div>
+
+    <div id="extendHours" hidden>
+      <label for="carryHours">연장 시점에 남아있던 기존 잔여시간 (시간)</label>
+      <input type="number" id="carryHours" min="0" step="0.5" value="0" inputmode="decimal">
+      <div class="hint">이 시간은 이용은 가능하지만 <b>환불 대상 금액에는 포함되지 않습니다.</b></div>
+
+      <label for="nowRemainHours">현재 총 잔여시간 (합산된 상태, 시간)</label>
+      <input type="number" id="nowRemainHours" min="0" step="0.5" inputmode="decimal" placeholder="예: 118">
+
+      <label for="usedAfter">신규 결제 이후 사용시간 (자동 계산)</label>
+      <input type="number" id="usedAfter" readonly>
+      <div class="hint">기존 유효기간이 1일밖에 남지 않았더라도 잔여시간은 신규 이용권에 합산되고,
+        <b>유효기간은 아래 &lsquo;연장(신규) 결제일&rsquo;부터 신규 이용권 기준으로 새로 시작</b>합니다.</div>
+    </div>
+  </div>
+
+  <!-- 기간권 입력 -->
+  <div id="daysWrap" hidden>
+    <label for="totalDays">계약상 이용기간 (일)</label>
+    <input type="number" id="totalDays" min="1" step="1" value="28" inputmode="numeric">
+  </div>
+
+  <!-- 날짜 -->
+  <div id="dateWrap">
+    <label for="startDate" id="startLabel">이용개시일</label>
+    <input type="date" id="startDate">
+
+    <div id="validWrap">
+      <label for="validDays">사용 유효기간 (일)</label>
+      <input type="number" id="validDays" min="1" step="1" value="60" inputmode="numeric">
+      <div class="chips" data-fill="validDays">
+        <button type="button" data-v="60">60일</button>
+        <button type="button" data-v="120">120일</button>
+        <button type="button" data-v="180">180일</button>
+      </div>
+    </div>
+
+    <label for="baseDate">환불 신청일 (오늘 기준)</label>
+    <input type="date" id="baseDate">
+
+    <div class="derived" id="derived"></div>
+  </div>
+
+  <button class="go" id="go" type="button">환불 금액 계산하기</button>
+</section>
+
+<div id="out">
+  <div class="headline">
+    <div class="rule" id="rule"></div>
+    <div class="plain" id="plain"></div>
+  </div>
+  <div class="steps" id="steps"></div>
+  <div class="final">
+    <div class="cap">최종 환불 금액</div>
+    <div class="num" id="amount">0원</div>
+    <div class="memo" id="memo"></div>
+  </div>
+</div>
+
+<div class="actions">
+  <button type="button" id="copy">계산 내역 복사</button>
+  <a class="primary"
+     href="https://docs.google.com/forms/d/e/1FAIpQLSeluOP7eGRCLQYUOvvhg1912qTmO_3DmDbTcrdtuaMmDHqjPA/viewform"
+     target="_blank" rel="noopener">환불 접수하기</a>
+</div>
+
+<section class="card">
+  <h2 class="step-title"><i>3</i>환불 규정 안내</h2>
+
+  <p class="policy-head">환불규정</p>
+  <p class="policy-lead">소비자의 변심 또는 상황변화로 인한 환불</p>
+  <p class="policy-note">
+    당일권은 환불이 불가하며,<br>
+    시간권 · 기간권도 <b>유효기간이 지나면 환불이 불가</b>합니다.
+  </p>
+
+  <table class="policy">
+    <tr>
+      <th>환불기한</th>
+      <td colspan="2">유효기간 내에만 가능</td>
+    </tr>
+    <tr>
+      <th>이용개시일<br>이전</th>
+      <td colspan="2">결제금액에서 <b>위약금 10%</b> 제외한 금액 환불</td>
+    </tr>
+    <tr>
+      <th>이용개시일<br>이후</th>
+      <td>
+        <span class="tag">시간권</span>
+        <span class="eq">환불금액 = 결제금액 &minus; [ 결제금액 &times; (사용시간 &divide; 계약상 이용시간) ] &minus; 위약금 10%</span>
+        <span class="cond">단, 남은 사용시간이 남은 유효기간보다 많을 경우 남은 유효기간만큼만 환불<br>
+        (사용시간 = 계약상 이용시간 &minus; 남은 유효기간)</span>
+      </td>
+      <td>
+        <span class="tag">기간권</span>
+        <span class="eq">환불금액 = 결제금액 &minus; [ 결제금액 &times; (사용기간 &divide; 계약상 이용기간) ] &minus; 위약금 10%</span>
+      </td>
+    </tr>
+  </table>
+  <p class="policy-tail">※ 스터디룸 예약시, 당일 취소 및 환불 불가</p>
+
+  <details>
+    <summary>시간권 연장(재구매) 시 환불 기준</summary>
+    <p>연장 결제 시 기존 잔여시간은 신규 이용권에 합산되어 <b>이용은 가능</b>하나,
+       환불 산정 시에는 <b>신규 결제한 이용권 금액</b>과 <b>신규 결제 이후 사용시간</b>을 기준으로 계산됩니다.</p>
+    <p>연장 전 보유하고 있던 잔여시간은 <b>별도 환불 대상 금액에 포함되지 않으며</b>,
+       기존 이용권의 환불은 해당 이용권의 <b>원래 유효기간 내에서만</b> 기존 결제 기준에 따라 산정됩니다.</p>
+    <p>연장 결제 시 기존 유효기간이 <b>1일만 남아 있어도 잔여시간은 신규 이용권에 합산</b>되며,
+       유효기간은 신규 구매한 이용권 기준으로 <b>새로 적용</b>됩니다.</p>
+    <p><b>기존 유효기간이 경과한 잔여시간은 환불되지 않습니다.</b></p>
+  </details>
+</section>
+
+<div class="foot">
+  본 계산 결과는 참고용이며, 실제 환불액은 결제 내역 확인 후 확정됩니다.<br>
+  made by sangboy
+</div>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  var DAY = 86400000;
+  var PENALTY = 0.10;                       // 위약금 = 결제금액의 10%
+  var state = { type:'time', stage:'after' };
+  function $(id){ return document.getElementById(id); }
+
+  /* ───────── 날짜 유틸 ───────── */
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function fmt(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function todayStr(){ return fmt(new Date()); }
+  function parseDate(s){
+    if(!s) return null;
+    var p = s.split('-');
+    if(p.length !== 3) return null;
+    var d = new Date(+p[0], +p[1]-1, +p[2]);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  function addDays(d,n){ var r = new Date(d); r.setDate(r.getDate()+n); return r; }
+  function daysInclusive(from,to){ return Math.floor((to-from)/DAY)+1; }   // 같은 날이면 1일
+  function num(n){ return Number(n).toLocaleString('ko-KR'); }
+  function won(n){ return num(Math.round(n))+'원'; }
+  function hr(n){ return (Math.round(n*10)/10).toLocaleString('ko-KR'); }
+  function pct(r){ return (r*100).toFixed(1)+'%'; }
+
+  $('startDate').value = todayStr();
+  $('baseDate').value  = todayStr();
+  $('roomDate').value  = todayStr();
+
+  /* ───────── 선택 UI ───────── */
+  function pressGroup(wrap, key, val){
+    Array.prototype.forEach.call(wrap.querySelectorAll('button'), function(b){
+      b.setAttribute('aria-pressed', String(b.dataset[key] === val));
+    });
+  }
+  $('types').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    state.type = b.dataset.type;
+    syncUI();
+  });
+  $('stage').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    state.stage = b.dataset.stage;
+    syncUI();
+  });
+
+  /* 프리셋: 시간 · 금액 · 유효기간을 한 번에 채움 (전부 직접 수정 가능) */
+  $('timePresets').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    $('totalHours').value = b.dataset.h;
+    $('price').value      = b.dataset.p;
+    $('validDays').value  = b.dataset.v;
+    refresh();
+  });
+  $('periodPresets').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    $('totalDays').value = b.dataset.d;
+    if(b.dataset.p) $('price').value = b.dataset.p;
+    refresh();
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.chips[data-fill]'), function(c){
+    c.addEventListener('click', function(e){
+      var b = e.target.closest('button'); if(!b) return;
+      $(c.dataset.fill).value = b.dataset.v;
+      refresh();
+    });
+  });
+
+  $('extend').addEventListener('change', syncUI);
+
+  /* ───────── 화면 구성 ───────── */
+  function syncUI(){
+    var t = state.type;
+    var before = (state.stage === 'before');
+    var isExt  = $('extend').checked;
+    var hasStage = (t === 'time' || t === 'period');
+
+    // 버튼 표시는 항상 state 에서 다시 그린다 — 화면과 계산 기준이 어긋나면
+    // 손님에게 엉뚱한 금액이 나가므로 두 곳을 따로 관리하지 않는다.
+    pressGroup($('types'), 'type',  t);
+    pressGroup($('stage'), 'stage', state.stage);
+
+    $('box-time').hidden   = (t !== 'time');
+    $('box-period').hidden = (t !== 'period');
+    $('box-day').hidden    = (t !== 'day');
+    $('box-room').hidden   = (t !== 'room');
+
+    $('stageWrap').hidden = !hasStage;
+    $('stageHint').textContent = before
+      ? '결제만 하고 아직 사용을 시작하지 않은 경우입니다. 유효기간 내라면 결제금액의 90%를 환불합니다.'
+      : '이미 사용을 시작한 경우입니다. 사용한 만큼 빼고, 위약금 10%를 추가로 뺍니다.';
+
+    $('priceWrap').hidden = (t === 'day');
+    $('priceLabel').textContent = (t === 'time' && isExt && !before)
+      ? '신규(연장) 결제 금액 (원)' : '결제 금액 (원)';
+
+    $('hoursWrap').hidden = !(t === 'time' && !before);
+    $('totalHoursLabel').textContent = (isExt ? '신규(연장) 계약상 이용시간 (시간)' : '계약상 이용시간 (시간)');
+    $('normalHours').hidden = isExt;
+    $('extendHours').hidden = !isExt;
+
+    $('daysWrap').hidden = !(t === 'period' && !before);
+
+    $('dateWrap').hidden  = (t === 'day' || t === 'room');
+    $('validWrap').hidden = !( (t === 'time') || before );
+    $('startLabel').textContent = before
+      ? '결제일 (유효기간 시작일)'
+      : (t === 'period' ? '이용개시일 (이용 시작일)'
+        : (isExt ? '연장(신규) 결제일 — 새 유효기간 시작일' : '이용개시일 (유효기간 시작일)'));
+
+    refresh();
+  }
+
+  /* ───────── 파생값 미리보기 ───────── */
+  function refresh(){
+    hideResult();
+
+    // 연장 모드: 신규 결제 이후 사용시간 자동 계산
+    if($('extend').checked){
+      var carry = Number($('carryHours').value) || 0;
+      var newTotal = Number($('totalHours').value) || 0;
+      var nowRemain = $('nowRemainHours').value;
+      if(nowRemain === ''){
+        $('usedAfter').value = '';
+      }else{
+        var used = (carry + newTotal) - Number(nowRemain);
+        $('usedAfter').value = Math.max(Math.round(used*10)/10, 0);
+      }
+    }
+
+    var t = state.type, before = (state.stage === 'before'), lines = [];
+    var base = parseDate($('baseDate').value);
+
+    if(t === 'day'){ $('derived').innerHTML = ''; return; }
+
+    if(t === 'room'){
+      var r = parseDate($('roomDate').value);
+      if(r && base){
+        var gap = Math.floor((r - base)/DAY);
+        lines.push('예약일까지 <b>'+(gap > 0 ? gap+'일 남음' : (gap === 0 ? '오늘(당일)' : Math.abs(gap)+'일 지남'))+'</b>');
+      }
+      $('derived').innerHTML = lines.join('<br>');
+      return;
+    }
+
+    var start = parseDate($('startDate').value);
+    if(start && base && !$('validWrap').hidden){
+      var v = Number($('validDays').value);
+      if(v > 0){
+        var exp = addDays(start, v-1);
+        var left = daysInclusive(base, exp);
+        lines.push('유효기간: <b>'+fmt(start)+' ~ '+fmt(exp)+'</b> ('+v+'일)');
+        lines.push('남은 유효기간: <b>'+(left > 0 ? left+'일' : '만료됨')+'</b>');
+      }
+    }
+    if(t === 'period' && !before && start && base){
+      var td = Number($('totalDays').value);
+      if(td > 0){
+        var end = addDays(start, td-1);
+        var usedD = Math.min(Math.max(daysInclusive(start, base), 0), td);
+        lines.push('이용기간: <b>'+fmt(start)+' ~ '+fmt(end)+'</b> ('+td+'일)');
+        lines.push('사용기간: <b>'+usedD+'일 / '+td+'일</b>');
+      }
+    }
+    $('derived').innerHTML = lines.join('<br>');
+  }
+
+  document.addEventListener('input', function(e){
+    if(e.target.tagName === 'INPUT' && e.target.type !== 'checkbox') refresh();
+  });
+
+  function hideResult(){ $('out').classList.remove('on'); }
+
+  /* ───────── 계산 ───────── */
+  function calc(){
+    var t = state.type, before = (state.stage === 'before');
+    var price = Number($('price').value);
+    var base = parseDate($('baseDate').value);
+    var steps = [];
+
+    /* 당일권 */
+    if(t === 'day'){
+      return show(0, '당일권 — 환불 불가',
+        '당일권은 규정상 환불이 되지 않는 상품입니다.',
+        [{t:'당일권 환불 규정', f:'당일권은 유효기간·사용 여부와 관계없이 환불 대상이 아닙니다.', v:'환불 불가'}],
+        '당일권은 환불이 불가합니다.');
+    }
+
+    if(!price || price <= 0){ alert('결제 금액을 입력해주세요.'); $('price').focus(); return; }
+    if(!base){ alert('환불 신청일을 입력해주세요.'); return; }
+
+    /* 스터디룸 */
+    if(t === 'room'){
+      var rDate = parseDate($('roomDate').value);
+      if(!rDate){ alert('예약일을 입력해주세요.'); return; }
+      if(rDate.getTime() <= base.getTime()){
+        return show(0, '스터디룸 — 당일 취소 · 환불 불가',
+          '예약일 당일(또는 이용일이 지난 뒤)에는 취소와 환불이 되지 않습니다.',
+          [{t:'예약일 / 신청일', f:'예약일 '+fmt(rDate)+' · 신청일 '+fmt(base), v:'당일 이후'},
+           {t:'적용 규정', f:'스터디룸 예약시, 당일 취소 및 환불 불가', v:'환불 불가'}],
+          '스터디룸은 예약 당일 취소·환불이 불가합니다.');
+      }
+      var rPen = price * PENALTY;
+      steps.push({t:'결제 금액', f:'입력하신 스터디룸 예약 결제금액입니다.', v:won(price)});
+      steps.push({t:'이용 전이므로 사용분 공제 없음',
+                  f:'예약일('+fmt(rDate)+')이 아직 오지 않았습니다.', v:'0원'});
+      steps.push({t:'위약금 10% 빼기', f:num(price)+' × 10% = '+won(rPen), v:'− '+won(rPen), m:true});
+      return show(price - rPen, '스터디룸 — 이용 전 취소 (위약금 10% 공제)',
+        '이용개시일 이전이므로 결제금액에서 위약금 10%만 뺍니다.', steps,
+        '결제금액 '+num(price)+'원 − 위약금 '+num(rPen)+'원');
+    }
+
+    /* 시간권 / 기간권 — 유효기간 확인 */
+    var start = parseDate($('startDate').value);
+    if(!start){ alert('이용개시일(결제일)을 입력해주세요.'); return; }
+
+    var expiry = null, leftValid = null;
+    if(!$('validWrap').hidden){
+      var validDays = Number($('validDays').value);
+      if(!validDays || validDays <= 0){ alert('사용 유효기간(일)을 입력해주세요.'); return; }
+      expiry = addDays(start, validDays - 1);
+      leftValid = daysInclusive(base, expiry);
+      if(leftValid <= 0){
+        return show(0, '유효기간 만료 — 환불 불가',
+          '환불은 유효기간 안에서만 가능합니다. 유효기간이 지난 잔여시간·잔여기간은 환불되지 않습니다.',
+          [{t:'유효기간', f:fmt(start)+' ~ '+fmt(expiry)+' ('+validDays+'일)', v:'만료'},
+           {t:'환불 신청일', f:fmt(base)+' — 만료일로부터 '+Math.abs(leftValid)+'일 경과', v:'기한 초과'}],
+          '유효기간이 지나 환불이 불가합니다.');
+      }
+    }
+
+    /* 이용개시일 이전 */
+    if(before){
+      var pen0 = price * PENALTY;
+      steps.push({t:'결제 금액', f:'환불 계산의 기준이 되는 금액입니다.', v:won(price)});
+      steps.push({t:'아직 사용 전 → 사용분 공제 없음',
+                  f:'이용을 시작하지 않아 차감할 사용분이 없습니다.', v:'0원'});
+      steps.push({t:'위약금 10% 빼기', f:num(price)+' × 10% = '+won(pen0), v:'− '+won(pen0), m:true});
+      return show(price - pen0, (t === 'time' ? '시간권' : '기간권')+' — 이용개시일 이전 (90% 환불)',
+        '이용개시일 이전이므로 결제금액에서 위약금 10%만 빼고 돌려드립니다.', steps,
+        '결제금액의 90% · 유효기간 '+fmt(expiry)+'까지 ('+leftValid+'일 남음)');
+    }
+
+    /* 시간권 — 이용개시일 이후 */
+    if(t === 'time'){
+      var total = Number($('totalHours').value);
+      if(!total || total <= 0){ alert('계약상 이용시간을 입력해주세요.'); return; }
+
+      var isExt = $('extend').checked;
+      var usedHours, remain, carry = 0;
+
+      if(isExt){
+        carry = Number($('carryHours').value) || 0;
+        var nowRaw = $('nowRemainHours').value;
+        if(nowRaw === ''){ alert('현재 총 잔여시간을 입력해주세요.'); $('nowRemainHours').focus(); return; }
+        var nowRemain = Math.max(Number(nowRaw), 0);
+        usedHours = Math.max((carry + total) - nowRemain, 0);   // 신규 결제 이후 사용시간
+        usedHours = Math.min(usedHours, total);                 // 신규 계약시간을 넘지 않음
+        remain = total - usedHours;                             // 신규 이용권 기준 잔여
+      }else{
+        var rRaw = $('remainHours').value;
+        if(rRaw === ''){ alert('잔여 시간을 입력해주세요.'); $('remainHours').focus(); return; }
+        remain = Math.min(Math.max(Number(rRaw), 0), total);
+        $('remainHours').value = remain;
+        usedHours = total - remain;
+      }
+
+      steps.push({t:'결제 금액', f:(isExt ? '연장(신규)으로 결제한 금액만 환불 대상입니다.'
+                                          : '환불 계산의 기준이 되는 금액입니다.'), v:won(price)});
+
+      if(isExt){
+        steps.push({t:'신규 결제 이후 사용시간',
+          f:'(이월 '+hr(carry)+'시간 + 신규 '+hr(total)+'시간) − 현재 잔여 '+hr(carry+total-usedHours)+'시간 = '+hr(usedHours)+'시간\n'
+           +'이월된 '+hr(carry)+'시간은 이용만 가능하고 환불 대상 금액에는 포함되지 않습니다.',
+          v:hr(usedHours)+'시간'});
+        steps.push({t:'유효기간은 신규 이용권 기준',
+          f:'연장 결제일 '+fmt(start)+'부터 다시 시작 → '+fmt(expiry)+'까지 (남은 '+leftValid+'일)\n'
+           +'기존 유효기간이 얼마 남지 않았어도 신규 결제로 새 유효기간이 적용됩니다.',
+          v:leftValid+'일 남음'});
+      }
+
+      // 남은 사용시간 > 남은 유효기간 → 남은 유효기간만큼만 환불
+      var capped = false;
+      if(remain > leftValid){
+        capped = true;
+        usedHours = total - leftValid;
+        remain = leftValid;
+        steps.push({t:'남은 유효기간 한도 적용',
+          f:'남은 잔여시간이 남은 유효기간('+leftValid+'일)보다 많아, 규정에 따라 남은 유효기간만큼만 환불합니다.\n'
+           +'사용시간 = 계약상 이용시간 '+hr(total)+' − 남은 유효기간 '+leftValid+' = '+hr(usedHours),
+          v:hr(remain)+'시간만 인정'});
+      }
+
+      var ratio = usedHours / total;
+      var usedAmt = price * ratio;
+      var pen = price * PENALTY;
+      var refund = Math.max(price - usedAmt - pen, 0);
+
+      steps.push({t:'사용 비율 구하기',
+        f:'사용시간 '+hr(usedHours)+'시간 ÷ 계약상 이용시간 '+hr(total)+'시간 = '+pct(ratio),
+        v:pct(ratio)});
+      steps.push({t:'사용한 만큼 빼기',
+        f:num(price)+' × '+pct(ratio)+' = '+won(usedAmt), v:'− '+won(usedAmt), m:true});
+      steps.push({t:'위약금 10% 빼기',
+        f:num(price)+' × 10% = '+won(pen), v:'− '+won(pen), m:true});
+
+      return show(refund,
+        '시간권 — 이용개시일 이후'+(capped ? ' (남은 유효기간 한도 적용)' : '')+(isExt ? ' · 연장분 기준' : ''),
+        '결제금액에서 ①사용한 만큼과 ②위약금 10%를 뺀 금액이 환불액입니다.',
+        steps,
+        won(price)+' − '+won(usedAmt)+' − '+won(pen)+' · 잔여 '+hr(remain)+'시간 / 남은 유효기간 '+leftValid+'일');
+    }
+
+    /* 기간권 — 이용개시일 이후 */
+    if(t === 'period'){
+      var totalDays = Number($('totalDays').value);
+      if(!totalDays || totalDays <= 0){ alert('계약상 이용기간(일)을 입력해주세요.'); return; }
+
+      var endDate = addDays(start, totalDays - 1);
+      var usedRaw = daysInclusive(start, base);
+
+      if(usedRaw > totalDays){
+        return show(0, '이용기간 종료 — 환불 불가',
+          '계약한 이용기간이 이미 모두 지나 환불 대상이 아닙니다.',
+          [{t:'계약 이용기간', f:fmt(start)+' ~ '+fmt(endDate)+' ('+totalDays+'일)', v:'종료'},
+           {t:'환불 신청일', f:fmt(base)+' — 종료일로부터 '+(usedRaw-totalDays)+'일 경과', v:'기한 초과'}],
+          '이용기간이 종료되어 환불이 불가합니다.');
+      }
+
+      var usedDays = Math.min(Math.max(usedRaw, 0), totalDays);
+      var ratioP = usedDays / totalDays;
+      var usedAmtP = price * ratioP;
+      var penP = price * PENALTY;
+      var refundP = Math.max(price - usedAmtP - penP, 0);
+
+      steps.push({t:'결제 금액', f:'환불 계산의 기준이 되는 금액입니다.', v:won(price)});
+      steps.push({t:'사용 기간 세기',
+        f:'이용개시일 '+fmt(start)+'부터 신청일 '+fmt(base)+'까지 '+usedDays+'일 (신청일 포함)\n'
+         +'계약 이용기간: '+fmt(start)+' ~ '+fmt(endDate)+' ('+totalDays+'일)',
+        v:usedDays+'일'});
+      steps.push({t:'사용 비율 구하기',
+        f:'사용기간 '+usedDays+'일 ÷ 계약상 이용기간 '+totalDays+'일 = '+pct(ratioP), v:pct(ratioP)});
+      steps.push({t:'사용한 만큼 빼기',
+        f:num(price)+' × '+pct(ratioP)+' = '+won(usedAmtP), v:'− '+won(usedAmtP), m:true});
+      steps.push({t:'위약금 10% 빼기',
+        f:num(price)+' × 10% = '+won(penP), v:'− '+won(penP), m:true});
+
+      return show(refundP, '기간권 — 이용개시일 이후',
+        '결제금액에서 ①사용한 만큼과 ②위약금 10%를 뺀 금액이 환불액입니다.',
+        steps,
+        won(price)+' − '+won(usedAmtP)+' − '+won(penP)+' · 잔여 '+(totalDays-usedDays)+'일');
+    }
+  }
+
+  /* ───────── 결과 출력 ───────── */
+  var lastText = '';
+  function show(refund, rule, plain, steps, memo){
+    var final = Math.max(Math.floor(refund), 0);   // 원 단위 절사
+
+    $('rule').textContent  = rule;
+    $('plain').textContent = plain;
+
+    var html = '';
+    steps.forEach(function(s, i){
+      html += '<div class="stp">'
+           +    '<div class="no">'+(i+1)+'</div>'
+           +    '<div class="body"><div class="t">'+s.t+'</div>'
+           +      '<div class="f">'+String(s.f).replace(/\n/g,'<br>')+'</div></div>'
+           +    '<div class="v'+(s.m ? ' minus' : '')+'">'+s.v+'</div>'
+           +  '</div>';
+    });
+    $('steps').innerHTML = html;
+
+    $('amount').textContent = num(final)+'원';
+    $('memo').textContent   = memo || '';
+    $('out').classList.toggle('no', final <= 0);
+    $('out').classList.add('on');
+
+    lastText = '[화이트펜슬 환불 계산]\n'+rule+'\n'+plain+'\n\n'
+             + steps.map(function(s,i){
+                 return (i+1)+'. '+s.t+' → '+s.v.replace('− ','-')+'\n   '+String(s.f).replace(/\n/g,'\n   ');
+               }).join('\n')
+             + '\n\n최종 환불 금액: '+num(final)+'원\n'+(memo || '');
+
+    $('out').scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+
+  $('go').addEventListener('click', calc);
+
+  $('copy').addEventListener('click', function(){
+    if(!lastText){ alert('먼저 계산을 실행해주세요.'); return; }
+    var btn = $('copy');
+    var done = function(){ var o = btn.textContent; btn.textContent = '복사되었습니다'; setTimeout(function(){ btn.textContent = o; }, 1300); };
+    var fallback = function(){
+      var ta = document.createElement('textarea');
+      ta.value = lastText; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); done(); }catch(err){ alert('복사에 실패했습니다.'); }
+      document.body.removeChild(ta);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(lastText).then(done, fallback);
+    }else{ fallback(); }
+  });
+
+  syncUI();
+})();
+</script>
+</body>
+</html>
